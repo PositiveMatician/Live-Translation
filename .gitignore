@@ -1,0 +1,37 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+
+# Virtual Environment
+venv/
+env/
+.env/
+.venv/
+
+# Log files
+*.log
+
+# VS Code files
+.vscode/
+*.code-workspace
+
+# Other files to ignore
+*.DS_Store  # macOS
+*.egg-info/
+*.egg
+*.pdb  # Python debugger files
+*.coverage  # Coverage reports
+*.hypothesis/  # Hypothesis testing files
+*.pytest_cache/  # pytest cache files
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Distribution / packaging
+.Python
+build/
+dist/
+
+# Any testing images
+*.jpg
+*.png
