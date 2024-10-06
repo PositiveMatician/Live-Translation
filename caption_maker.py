@@ -1,4 +1,3 @@
-import logging
 from PIL import Image, ImageDraw, ImageFont
 import os
 from text_translator import detect_language  # Ensure this import is correct
@@ -19,10 +18,11 @@ def create_captioned_image(text: str, font_size: int = 360, top_margin_pct: floa
     Returns:
         Image: A Pillow Image object with the caption.
     """
+    print("Running create_captioned_image from caption_maker")
     # Detect language of the input text
     language = detect_language(text)
 
-    logging.info('Creating captioned image with text: "%s" (Detected language: %s)', text, language)
+    print('%s(Detected language: %s)',text, language)
 
     # Create a temporary white background image
     temp_image = Image.new('RGBA', (400, 200), (255, 255, 255, 255))  # Initial size with white background
@@ -36,9 +36,10 @@ def create_captioned_image(text: str, font_size: int = 360, top_margin_pct: floa
             font_path = 'arial.ttf'  # Replace with your standard font path
             
         font = ImageFont.truetype(font_path, font_size)
-        logging.info('Loaded font: %s at size: %d', font_path, font_size)
+        print('Loaded font: %s at size: %d', font_path, font_size)
     except IOError:
-        logging.warning("TTF font not found, using default font.")
+        with open('caption_maker.log','a') as file:
+            file.write("TTF font not found, using default font.")
         font = ImageFont.load_default()
 
     # Calculate the bounding box of the text
@@ -71,22 +72,13 @@ def create_captioned_image(text: str, font_size: int = 360, top_margin_pct: floa
     position = (left_margin, top_margin)  # Offset by respective margins
     draw.text(position, text, fill='red', font=font)
 
-    logging.info('Captioned image created successfully with dimensions: %dx%d', final_width, final_height)
+    print('Captioned image created successfully with dimensions: %dx%d and text: %s', final_width, final_height,text)
     return image
 
 if __name__ == '__main__':
-    # Configure logging
-    log_filename = os.path.splitext(os.path.basename(__file__))[0] + '.log'
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_filename),  # Log to file
-            logging.StreamHandler()  # Log to console
-        ]
-    )
+
 
     # Example usage
-    captioned_image = create_captioned_image('好きなだけ')  # Example Japanese text
+    captioned_image = create_captioned_image('I Like FUTIMON')  # Example Japanese text
     captioned_image.show()  # To display the image
     # captioned_image.save('captioned_image.png')  # To save the image

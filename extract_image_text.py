@@ -2,7 +2,6 @@ import easyocr
 from PIL import Image
 import numpy as np
 import cv2  # Optional: For displaying images if needed
-import logging
 import os
 
 
@@ -49,7 +48,7 @@ def extract_japanese_text(image: Image.Image) -> list:
             'confidence': float(prob)
         })
 
-    logging.info(f"Extracted {len(extracted_text)} text items from the image.")
+    print(f"Extracted {len(extracted_text)} text items from the image.")
     return extracted_text
 
 def display_image_with_boxes(image: Image.Image, results: list):
@@ -86,27 +85,18 @@ def display_image_with_boxes(image: Image.Image, results: list):
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
-    # Configure logging
-    script_name = os.path.basename(__file__).split('.')[0]  # Get the script name without extension
-    log_file = f"{script_name}.log"
 
-    logging.basicConfig(
-        level=logging.DEBUG,  # Set logging level to DEBUG
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),  # Log to file
-            logging.StreamHandler()          # Log to console
-        ]
-    )
+
+
     # Example usage:
     img_path = '1.jpg'  # Replace with your image path
     img = Image.open(img_path)  # Open the image using Pillow
     extracted_results = extract_japanese_text(img)
 
-    logging.info(f"Extracted results: {extracted_results}")
+    print(f"Extracted results: {extracted_results}")
     for result in extracted_results:
-        logging.info(f"Detected text: {result['text']} with confidence {result['confidence']:.2f}")
-        logging.info(f"Bounding box: x1={result['coordinates']['x1']}, x2={result['coordinates']['x2']}, y1={result['coordinates']['y1']}, y2={result['coordinates']['y2']}")
+        print(f"Detected text: {result['text']} with confidence {result['confidence']:.2f}")
+        print(f"Bounding box: x1={result['coordinates']['x1']}, x2={result['coordinates']['x2']}, y1={result['coordinates']['y1']}, y2={result['coordinates']['y2']}")
 
     # Optionally display the image with bounding boxes
     display_image_with_boxes(img, extracted_results)

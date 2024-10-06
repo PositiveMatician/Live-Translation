@@ -1,5 +1,4 @@
 import socket
-import logging
 import os
 from langdetect import detect, DetectorFactory
 from langdetect.lang_detect_exception import LangDetectException
@@ -20,7 +19,7 @@ def is_valid_text(text: str) -> bool:
         bool: True if valid, False otherwise.
     """
     valid = bool(text and text.strip())
-    logging.info(f"Validating text: '{text}' - Valid: {valid}")
+    print(f"Validating text: '{text}' - Valid: {valid}")
     return valid
 
 def detect_language(text: str) -> str:
@@ -34,10 +33,11 @@ def detect_language(text: str) -> str:
     """
     try:
         language = detect(text)
-        logging.info(f"Detected language: {language} for text: '{text}'")
+        print(f"Detected language: {language} for text: '{text}'")
         return language
     except LangDetectException:
-        logging.warning("Language detection failed.")
+        with open(os.path.basename(__file__).replace('.py', '.log'),'a') as file:
+            file.write("Language detection failed.")
         return "Could not detect the language"
 
 def is_connected(host="www.google.com", port=80, timeout=5) -> bool:
@@ -54,10 +54,11 @@ def is_connected(host="www.google.com", port=80, timeout=5) -> bool:
     try:
         socket.setdefaulttimeout(timeout)
         socket.create_connection((host, port))
-        logging.info("Internet connection established.")
+        print("Internet connection established.")
         return True
     except OSError:
-        logging.warning("No internet connection.")
+        with open(os.path.basename(__file__).replace('.py', '.log'),'a') as file:
+            file.write("No internet connection.")
         return False
 
 def translate_offline(text: str, source_lang: str, target_lang: str = 'en') -> str:
@@ -72,7 +73,7 @@ def translate_offline(text: str, source_lang: str, target_lang: str = 'en') -> s
         str: The translated text.
     """
     model_name = f'Helsinki-NLP/opus-mt-{source_lang}-{target_lang}'
-    logging.info(f"Loading offline model for translation from {source_lang} to {target_lang}.")
+    print(f"Loading offline model for translation from {source_lang} to {target_lang}.")
     
     # Load the tokenizer and model
     tokenizer = MarianTokenizer.from_pretrained(model_name)
@@ -82,7 +83,7 @@ def translate_offline(text: str, source_lang: str, target_lang: str = 'en') -> s
     tokenized_text = tokenizer(text, return_tensors="pt", padding=True)
     translated = model.generate(**tokenized_text)
     translation = tokenizer.decode(translated[0], skip_special_tokens=True)
-    logging.info(f"Offline translation result: '{translation}'")
+    print(f"Offline translation result: '{translation}'")
     return translation
 
 def translate_online(text: str, target_language: str = 'en') -> str:
@@ -98,13 +99,13 @@ def translate_online(text: str, target_language: str = 'en') -> str:
     translator = Translator()
     try:
         translation = translator.translate(text, dest=target_language)
-        logging.info(f"Online translation result: '{translation.text}'")
+        print(f"Online translation result: '{translation.text}'")
         return translation.text
     except Exception as e:
-        logging.error(f"Translation error: {e}")
+        print(f"Translation error: {e}")
         return ""
 
-def translate_text(text: str, target_language: str = 'en', USE_GOOGLE = False) -> str:
+def translate_text(text: str, target_language: str = 'en', USE_GOOGLE = True) -> str:
     """Detect language, check internet connectivity, and translate accordingly.
     
     Args:
@@ -115,7 +116,8 @@ def translate_text(text: str, target_language: str = 'en', USE_GOOGLE = False) -
         str: The translated text or an error message.
     """
     if not is_valid_text(text):
-        logging.error("Invalid input text.")
+        with open(os.path.basename(__file__).replace('.py', '.log'),'a') as file:
+            file.write("Invalid input text.")
         return "Invalid input text."
 
     # Detect language
@@ -123,22 +125,13 @@ def translate_text(text: str, target_language: str = 'en', USE_GOOGLE = False) -
     
     # Check if there is an internet connection
     if is_connected() and USE_GOOGLE:
-        logging.info("Internet connection detected")
+        print("Internet connection detected")
         return translate_online(text, target_language)
     else:
         return translate_offline(text, language_code, target_language)
 
 if __name__ == '__main__':
-    # Set up logging with Unicode support
-    script_name = os.path.basename(__file__).replace('.py', '')
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(f"{script_name}.log", encoding='utf-8'),
-            logging.StreamHandler()  # Log to console
-        ]
-    )
+    
     # Example usage
     input_text = "好きなだけ"  # Japanese for "as much as you like"
     translated_text = translate_text(input_text, "en")  # Translates to English

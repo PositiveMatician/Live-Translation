@@ -102,3 +102,4 @@ The application uses Python's built-in `logging` library to log messages at diff
 ## TODO:
    -  make the screenshot maker and window make accept coordinates as percentage of screen rather than absolute points.
    - When user starts typing , minimize the tk window , and when no typing is detected for a interval , click a screenshot and put its translation out 
+   - Make a python script whuch could dry run all the rest of the scripts and debug them if needed

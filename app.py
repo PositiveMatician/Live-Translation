@@ -1,4 +1,3 @@
-import logging
 import extract_image_text
 import text_translator
 import caption_maker
@@ -7,32 +6,15 @@ import window_creator
 import screenshot_clicker
 from PIL import Image
 import io
+import os
 import win32clipboard 
 from win32con import CF_DIB
+import keyboard
+import threading
 
-# Set up logging
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)  # Set the overall logging level
+# Define the thread variable globally
+translation_thread = None
 
-# Create handlers
-console_handler = logging.StreamHandler()  # For console output
-file_handler = logging.FileHandler('app.log')  # For logging to a file
-
-# Set logging levels for handlers
-console_handler.setLevel(logging.INFO)  # Only info level logs for the console
-file_handler.setLevel(logging.WARNING)   # Warning and above for the file
-
-# Create log formatters
-console_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-
-# Attach formatters to handlers
-console_handler.setFormatter(console_formatter)
-file_handler.setFormatter(file_formatter)
-
-# Add handlers to the logger
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
 
 def mid_process(img) -> Image.Image:
     """
@@ -55,7 +37,8 @@ def mid_process(img) -> Image.Image:
             # Translate the extracted text
             translated_text = text_translator.translate_text(text)
         except Exception as err:
-            logger.error(f"Translation error: {err}")
+            with open(os.path.basename(__file__).replace('.py', '.log'), 'a') as file:
+                file.write(f"Translation error: {err}\n")
             translated_text = text  # Fallback to original text if translation fails
 
         # Create a captioned image object
@@ -84,13 +67,15 @@ def screen_maker(coords: tuple = (500, 1000, 0, 1000)) -> None:
     """
     # Validate coordinates
     if None in coords:
-        logger.warning("Invalid coordinates: None detected.")
+        with open(os.path.basename(__file__).replace('.py', '.log'), 'a') as file:
+            file.write("Invalid coordinates: None detected.\n")
         return None
 
-    logger.info(f"Capturing screenshot with coordinates: {coords}")
+    print(f"Capturing screenshot with coordinates: {coords}")
 
     # Capture a screenshot of the specified area
     screenshot = screenshot_clicker.capture_screenshot(coords)
+
 
     # Process the captured screenshot
     screenshot = mid_process(screenshot)
@@ -113,7 +98,8 @@ def copy_image_to_clipboard(image:Image.Image):
     """
     # Validate the input
     if not isinstance(image, Image.Image):
-        logger.error("Invalid input: Provided object is not a Pillow Image instance.")
+        with open(os.path.basename(__file__).replace('.py', '.log'), 'a') as file:
+            file.write("Invalid input: Provided object is not a Pillow Image instance.\n")
         raise ValueError("The provided object is not a Pillow Image instance.")
 
     try:
@@ -128,9 +114,10 @@ def copy_image_to_clipboard(image:Image.Image):
             win32clipboard.EmptyClipboard()
             win32clipboard.SetClipboardData(win32clipboard.CF_DIB, output.getvalue())  # Set the image data
 
-        logger.info("Image copied to clipboard successfully.")
+        print("Image copied to clipboard successfully.")
     except Exception as e:
-        logger.error(f"Failed to copy image to clipboard: {e}")
+        with open(os.path.basename(__file__).replace('.py', '.log'), 'a') as file:
+            file.write(f"Failed to copy image to clipboard: {e}\n")
     finally:
         win32clipboard.CloseClipboard()  # Ensure the clipboard is closed
 
@@ -156,31 +143,69 @@ def get_image_from_clipboard() -> Image.Image:
             # Create a BytesIO object from the DIB data
             image = Image.open(io.BytesIO(dib_data))
 
-            logger.info("Image retrieved from clipboard successfully.")
+            print("Image retrieved from clipboard successfully.")
             return image
         else:
-            logger.error("Clipboard does not contain a DIB image.")
+            with open(os.path.basename(__file__).replace('.py', '.log'), 'a') as file:
+                file.write("Clipboard does not contain a DIB image.\n")
             raise ValueError("No image found in the clipboard or unsupported format.")
     except Exception as e:
-        logger.error(f"Failed to retrieve image from clipboard: {e}")
+        with open(os.path.basename(__file__).replace('.py', '.log'), 'a') as file:
+            file.write(f"Failed to retrieve image from clipboard: {e}\n")
         raise
     finally:
         win32clipboard.CloseClipboard()  # Ensure the clipboard is closed
 
 
-# Starting the screen maker function with initial coordinates
+def start_translation():
+    """
+    The function to be called when Num Lock is pressed. This will initiate the translation process.
+    """
+    print("Starting translation process...")
+    # Call your translation functions here, like screen_maker or mid_process.
+    screen_maker((0,0,0,0))
+
+def on_demand_translation():
+    """
+    Listens for the Num Lock key. Starts a new thread to run the translation process
+    when the key is pressed, and restarts the thread if it has finished running.
+    """
+    global translation_thread
+
+    def toggle_translation():
+        global translation_thread
+
+        if translation_thread and translation_thread.is_alive():
+            print("Translation is already running.")
+        else:
+            print("Num Lock pressed. Starting a new translation thread.")
+            translation_thread = threading.Thread(target=start_translation)
+            translation_thread.start()
+
+    # Listen for Num Lock key press
+    print("Listening for Num Lock key press to start/stop translation...")
+    keyboard.add_hotkey('num lock', toggle_translation)
+
+    # Keep the program running to listen for the key press
+    keyboard.wait('esc')  # Press 'esc' to stop listening
+
+
+
 if __name__ == "__main__":
     pass
     ## live translation
-    # screen_maker((66, 1490, 76, 694))
+    # screen_maker((0,100,0,100))
     
-    ## Single Image Translation
+    # # Single Image Translation
     # img = Image.open('1.jpg')
     # result = mid_process(img)
     # result.show()
 
-    # Translate image from clipboard
-    img = get_image_from_clipboard()
-    result = mid_process(img)
-    copy_image_to_clipboard(result)
-    result.show()
+    # # Translate image from clipboard
+    # img = get_image_from_clipboard()
+    # result = mid_process(img)
+    # copy_image_to_clipboard(result)
+    # result.show()
+
+    # # On demand Translation 
+    # on_demand_translation()
